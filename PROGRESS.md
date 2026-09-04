@@ -91,3 +91,31 @@ is closed — see [CONTRIBUTING.md](CONTRIBUTING.md).
 - **By:** ALLEN-AYODEJI
 - **Closes:** N/A (prep for the typosquat scanner module)
 - **Status:** Merged. `cargo test --workspace --locked` passes.
+
+### Testnet read client — get_bounty / get_claim by ID
+
+- **What:** Adds `client/`, a minimal read-only Node/TS client for
+  `deprader_router` on Stellar testnet (contract ID
+  `CBFLUY6NB3JOQDEUOF2JG5TL3UD7GCQ7APUJ6EHNNSUJLUELHSGIG675`). Uses
+  `@stellar/stellar-sdk`'s `rpc.Server.queryContract` to simulate
+  `get_bounty(bounty_id)` and `get_claim(bounty_id)` calls against
+  `https://soroban-testnet.stellar.org` and print the decoded result — no
+  transactions are submitted and no funded account is required, since both
+  contract methods are pure reads. CLI: `npm start -- --bounty-id <id>
+  --claim-id <id>` (both default to `1`). An ID with no matching bounty or
+  claim prints a plain "not found" line rather than erroring, matching the
+  contract's `Option<Bounty>` / `Option<Claim>` return type. Kept as a
+  standalone `client/` package (its own `package.json`/`tsconfig.json`,
+  outside the Cargo workspace) since it's plain TypeScript, not a Soroban
+  contract.
+- **Verified:** Run against the live contract with the default IDs, which
+  resolve to the real `create_bounty` → `submit_claim` → `release` cycle
+  recorded above — `get_bounty(1)` returned the stored bounty (amount
+  `50000000`, `issue_ref: "org/repo#123"`, `released: true`) and
+  `get_claim(1)` returned the stored claim (`proof_ref:
+  "org/repo#123-pr-456"`). Also verified an unknown ID (`999`) prints the
+  not-found path for both calls instead of throwing.
+- **By:** ALLEN-AYODEJI
+- **Closes:** #6
+- **Status:** Merged. No UI yet, per the issue scope — read-only CLI output
+  only.
