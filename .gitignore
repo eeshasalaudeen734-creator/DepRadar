@@ -6,3 +6,4 @@ dist/
 .stellar/
 .soroban/
 **/identity/*.toml
+config.bat
