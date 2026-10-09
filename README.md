@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/DepRadarOrg/DepRadar/actions/workflows/ci.yml/badge.svg)](https://github.com/DepRadarOrg/DepRadar/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Network](https://img.shields.io/badge/network-Stellar%20Testnet-blue)](https://stellar.expert/explorer/testnet/contract/CBFLUY6NB3JOQDEUOF2JG5TL3UD7GCQ7APUJ6EHNNSUJLUELHSGIG675)
+[![Network](https://img.shields.io/badge/network-Stellar%20Testnet-blue)](https://stellar.expert/explorer/testnet/contract/CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ)
 
 ## Mission
 
@@ -60,27 +60,44 @@ flowchart LR
 The router contract is deployed and has completed a full bounty lifecycle
 on Stellar testnet:
 
-**Contract ID:** [`CBFLUY6NB3JOQDEUOF2JG5TL3UD7GCQ7APUJ6EHNNSUJLUELHSGIG675`](https://stellar.expert/explorer/testnet/contract/CBFLUY6NB3JOQDEUOF2JG5TL3UD7GCQ7APUJ6EHNNSUJLUELHSGIG675)
+**Contract ID:** [`CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ`](https://stellar.expert/explorer/testnet/contract/CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ)
 
-A one-time `initialize(admin)` call at deploy time sets the admin address
-that `release` is gated on. The bounty lifecycle itself is deliberately
-minimal — three calls, each with a single, checkable responsibility:
+A one-time `initialize(admin)` call at deploy time sets the admin who
+reviews claims. Bounty IDs are assigned by the contract, and every state
+change emits an event (`created`, `claimed`, `rejected`, `released`,
+`cancelled`, `admin_set`) so indexers and dashboards can follow along
+without polling.
 
-1. **`create_bounty(creator, bounty_id, issue_ref, amount, token)`** — locks
-   `amount` of `token` from `creator` against a bounty ID, referencing the
-   underlying issue (`issue_ref`). Funds move into the contract at this
-   point; nobody, including the admin, can touch them yet.
-2. **`submit_claim(bounty_id, claimant, proof_ref)`** — records that
-   `claimant` is claiming the bounty, with a reference to their proof
-   (e.g. a PR or writeup). This step moves no funds — it's a public,
-   on-chain record of who claimed what, and when.
-3. **`release(admin, bounty_id)`** — admin-gated and callable exactly once
-   per bounty. Pays the locked funds to whoever is on record as the
-   claimant, then marks the bounty released so it cannot be paid out
-   twice.
+1. **`create_bounty(creator, issue_ref, amount, token, deadline) -> bounty_id`**
+   — locks `amount` of `token` from `creator` against the finding described
+   by `issue_ref`, open for claims until `deadline`. Funds move into the
+   contract here.
+2. **`submit_claim(bounty_id, claimant, proof_ref) -> claim_id`** — records a
+   claim with a reference to the proof (a PR, advisory or writeup). Moves no
+   funds. Any number of researchers can claim the same bounty (one claim
+   per address, capped at 50), so a junk claim submitted first can't block
+   the real finder.
+3. **`reject_claim(bounty_id, claim_id)`** — admin-only. Marks a bad claim
+   rejected; the bounty stays open for the others.
+4. **`release(bounty_id, claim_id)`** — admin-only, once per bounty. Pays the
+   locked funds to the chosen claimant and closes the bounty. Still works
+   after the deadline, so in-time claims can be paid during review.
+5. **`cancel_bounty(caller, bounty_id)`** — refunds the creator. The admin
+   can cancel at any time; the creator can cancel once the deadline has
+   passed with no pending claims, or once a 7-day review window after the
+   deadline has also passed. Funds can never be locked forever, and a
+   creator can't pull them out from under a claimant awaiting review.
 
-`get_bounty` and `get_claim` expose the full state at every step, so
-anyone can verify a bounty's status without trusting a dashboard or API.
+The admin can be rotated with a two-step `propose_admin` / `accept_admin`
+handshake. `get_bounty`, `get_claim`, `get_claim_id`, `bounty_count` and
+`get_admin` expose the full state at every step, so anyone can verify a
+bounty without trusting a dashboard or API — the
+[testnet read client](client/) does exactly that.
+
+The lifecycle above was run end-to-end against the live contract,
+including the case the original single-claim design couldn't handle: a
+junk claim lands first, the admin rejects it, and the real finder is paid
+([release tx](https://stellar.expert/explorer/testnet/tx/69538e183dab1799c92be7231e562fcbca47bd32e0247a44f0cddfbeaee84cb0)).
 
 ## Why This Matters
 
@@ -108,6 +125,7 @@ verified, with the full trail auditable by anyone.
 |---|---|
 | Bounty Router contract (`create_bounty` / `submit_claim` / `release`), unit-tested and deployed to Stellar testnet | _(predates issue tracker)_ |
 | Full `create_bounty` → `submit_claim` → `release` lifecycle run and verified against the live testnet contract | _(predates issue tracker)_ |
+| Hardened Bounty Router v2 — multiple claims per bounty, `reject_claim`, deadlines + `cancel_bounty` refunds, contract-assigned IDs, events, storage TTL management, two-step admin rotation; redeployed and verified on testnet | _(this PR)_ |
 | Popular-package reference dataset — npm and PyPI top-1000 curated lists (`data/popular-packages/`) and dataset loader (`src/typosquat/dataset.rs`) | [#1](https://github.com/DepRadarOrg/DepRadar/pull/1) |
 | Levenshtein edit-distance scorer and `nearest_match` for typosquat detection (`src/typosquat/distance.rs`) | [#2](https://github.com/DepRadarOrg/DepRadar/pull/2) |
 | Homoglyph (lookalike-character) signal — Unicode confusable normalization and `homoglyph_impersonation` (`src/typosquat/homoglyph.rs`) | [#7](https://github.com/DepRadarOrg/DepRadar/pull/7) |

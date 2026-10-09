@@ -63,9 +63,9 @@ This creates a keypair under your local Stellar CLI config (see
 excluded from the repo) and funds it via friendbot. Use `<name>` wherever
 these docs or scripts expect a `--source` or `--admin` identity.
 
-The testnet admin identity used for the current `deprader_router` deployment
-(`GD7IF4QGOEOG6Q7WBD6GDZEZ7HAY4RLDJ5QQTRMJRHOBR43DI3YNJNM6`) will be rotated
-before this repo goes public, since its address is already exposed on-chain
-through the deploy and `initialize` transactions. Testnet funds have no real
-value, but treat the rotation as a reminder not to reuse identities across
-public and private stages of a project.
+The current `deprader_router` testnet deployment
+(`CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ`) uses a fresh
+admin identity, replacing the one exposed by the original v1 deployment.
+Testnet funds have no real value, but don't reuse identities across
+testnet and mainnet — the contract supports `propose_admin` /
+`accept_admin` precisely so the admin can be rotated without a redeploy.

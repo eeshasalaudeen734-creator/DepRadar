@@ -21,7 +21,7 @@ metadata changes on PyPI, dependency graph updates, etc.)
 ## Interface with deprader_router
 
 How does this module interface with the `deprader_router` contract
-(testnet contract ID: `CBFLUY6NB3JOQDEUOF2JG5TL3UD7GCQ7APUJ6EHNNSUJLUELHSGIG675`)?
+(testnet contract ID: `CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ`)?
 
 For example: does it hand off discovered items to a scanner module that
 calls `create_bounty`, does it read existing bounty/claim state via

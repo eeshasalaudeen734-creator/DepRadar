@@ -20,7 +20,8 @@ is closed — see [CONTRIBUTING.md](CONTRIBUTING.md).
   of locked funds to the claimant). Getters: `get_bounty`, `get_claim`.
 - **By:** ALLEN-AYODEJI
 - **Closes:** N/A (predates the issue tracker)
-- **Status:** Deployed and verified on Stellar testnet.
+- **Status:** Deployed and verified on Stellar testnet. *Superseded by the
+  hardened v2 router below.*
   - Contract ID: `CBFLUY6NB3JOQDEUOF2JG5TL3UD7GCQ7APUJ6EHNNSUJLUELHSGIG675`
   - A full `create_bounty` → `submit_claim` → `release` cycle was run
     against the live testnet contract using the native XLM Stellar Asset
@@ -207,4 +208,59 @@ is closed — see [CONTRIBUTING.md](CONTRIBUTING.md).
   on the upgraded SDK.
 - **By:** ALLEN-AYODEJI
 - **Closes:** N/A (maintenance)
+- **Status:** Merged.
+
+### deprader_router v2 — claim review, refunds, events, TTL, admin rotation
+
+- **What:** Reworks `contracts/deprader_router` to close the gaps in the v1
+  design, where the first claim on a bounty was the only one that could
+  ever be paid (a junk claim could block the real finder), unclaimed funds
+  had no way out, and nothing was observable without polling.
+  - **Multiple claims per bounty.** `submit_claim` returns a `claim_id`;
+    any number of addresses can claim (one each, capped at
+    `MAX_CLAIMS_PER_BOUNTY` = 50). Claims carry a `Pending` / `Rejected` /
+    `Accepted` status and a `submitted_at` timestamp.
+  - **Admin review.** New `reject_claim(bounty_id, claim_id)`;
+    `release(bounty_id, claim_id)` now pays a *specific* claim. Both check
+    the stored admin's auth directly instead of taking an `admin` argument.
+  - **Deadlines and refunds.** `create_bounty` takes a `deadline` (max one
+    year out); claims close at the deadline. New `cancel_bounty` refunds
+    the creator — the admin any time, the creator once the deadline has
+    passed with no pending claims or a 7-day review window after it has
+    elapsed.
+  - **Contract-assigned bounty IDs** (`create_bounty` returns the ID;
+    `bounty_count` getter), removing caller-chosen ID collisions.
+  - **Events** for every state change: `created`, `claimed`, `rejected`,
+    `released`, `cancelled`, `admin_set`, `admin_prp`.
+  - **Storage TTL management** — instance and persistent entries are
+    extended on every write, so live bounties aren't archived mid-review.
+  - **Two-step admin rotation** — `propose_admin` / `accept_admin`, plus
+    `get_admin` / `get_pending_admin`.
+  - Input validation for `issue_ref` / `proof_ref` (non-empty, ≤ 256 bytes);
+    `create_bounty` requires an initialized contract; state is written
+    before every token transfer.
+- **Tests:** 21 contract tests (up from 7) covering initialization, ID
+  assignment, input validation, auth (checked via `env.auths()` and by
+  dropping all mocked auths), multi-claim, duplicate/late/over-cap claims,
+  the junk-claim-first scenario, release during the review window, every
+  cancel path and timing boundary, and admin rotation. Snapshots
+  regenerated.
+- **Deployed:** testnet contract
+  [`CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ`](https://stellar.expert/explorer/testnet/contract/CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ)
+  with a fresh admin identity (replacing the v1 admin exposed on-chain).
+  Verified live with native XLM:
+  - Bounty 1: `create_bounty` (5 XLM) → a junk claim (#0) then a real
+    claim (#1) → `reject_claim(1, 0)` → `release(1, 1)` paid the real
+    claimant
+    ([tx](https://stellar.expert/explorer/testnet/tx/69538e183dab1799c92be7231e562fcbca47bd32e0247a44f0cddfbeaee84cb0)).
+  - Bounty 2: `create_bounty` (2 XLM) → claim → a non-admin `release`
+    attempt failed authorization → admin `cancel_bounty` refunded the
+    creator
+    ([tx](https://stellar.expert/explorer/testnet/tx/39b406a4eeda3d879c0b45ff2a8eae388838eda9bc185891f6fc47eca1b31912)).
+- **Client:** `client/` points at the v2 contract and now prints a bounty
+  plus every claim on it (`get_claim(bounty_id, claim_id)`).
+- **Breaking:** `create_bounty`, `submit_claim`, `get_claim` and `release`
+  signatures changed; `Bounty.released: bool` became `status`.
+- **By:** ALLEN-AYODEJI
+- **Closes:** N/A (contract hardening)
 - **Status:** Merged.

@@ -21,7 +21,7 @@ license detection, typosquat detection, etc.)
 ## Interface with deprader_router
 
 How does this module interface with the `deprader_router` contract
-(testnet contract ID: `CBFLUY6NB3JOQDEUOF2JG5TL3UD7GCQ7APUJ6EHNNSUJLUELHSGIG675`)?
+(testnet contract ID: `CCPRQANY467KKE4ROKCNW6TH3LY3EPVFRXIXJ5V4VCYHLJKWZPOZYQJQ`)?
 
 For example: does it call `create_bounty` for findings it surfaces, submit
 claims via `submit_claim`, or only read bounty/claim state via `get_bounty` /
