@@ -1,7 +1,10 @@
 import { Link, useParams } from "react-router-dom";
-import { AddressLink, Empty, ErrorState, Loading, StatusBadge } from "../components/ui";
+import { AddressLink, CopyButton, Empty, ErrorState, Identicon, Skeleton, StatusBadge } from "../components/ui";
+import { NATIVE_XLM_SAC } from "../config";
 import { getBounty, listClaims } from "../lib/contract";
-import { formatAmount, formatDate, relativeTime, tokenSymbol } from "../lib/format";
+import { formatAmount, formatDate, relativeTime, splitIssueRef, tokenSymbol } from "../lib/format";
+import { bountyTimeline, type TimelineEvent } from "../lib/insights";
+import type { Bounty, Claim } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 
 export function BountyDetail() {
@@ -14,77 +17,151 @@ export function BountyDetail() {
   }, `bounty:${idParam}`);
 
   return (
-    <section>
+    <div className="detail">
       <Link to="/" className="back">
-        ← All bounties
+        ← Bounty board
       </Link>
 
-      {state.status === "loading" && <Loading />}
+      {state.status === "loading" && <DetailSkeleton />}
       {state.status === "error" && <ErrorState error={state.error} onRetry={state.reload} />}
       {state.status === "success" && state.data === null && <Empty>Bounty #{idParam} doesn't exist.</Empty>}
-      {state.status === "success" && state.data && (
-        <>
-          <div className="page-head">
-            <div>
-              <p className="muted mono">Bounty #{state.data.bounty.id}</p>
-              <h1>{state.data.bounty.issueRef}</h1>
-            </div>
-            <StatusBadge status={state.data.bounty.status} />
-          </div>
+      {state.status === "success" && state.data && <Detail bounty={state.data.bounty} claims={state.data.claims} />}
+    </div>
+  );
+}
 
-          <dl className="facts">
+function Detail({ bounty, claims }: { bounty: Bounty; claims: Claim[] }) {
+  const { ecosystem, text } = splitIssueRef(bounty.issueRef);
+  const timeline = bountyTimeline(bounty, claims);
+
+  return (
+    <>
+      <header className={`detail-hero status-${bounty.status.toLowerCase()}`}>
+        <div className="detail-hero-main">
+          <div className="card-top">
+            <span className="card-id mono">Bounty #{bounty.id}</span>
+            {ecosystem && <span className="eco">{ecosystem}</span>}
+            <StatusBadge status={bounty.status} />
+          </div>
+          <h1>{text}</h1>
+          <p className="muted">
+            Funded by <AddressLink address={bounty.creator} avatar /> on {formatDate(bounty.createdAt)}
+          </p>
+        </div>
+        <div className="detail-reward">
+          <span className="reward-label">Reward</span>
+          <span className="reward-amount">{formatAmount(bounty.amount)}</span>
+          <span className="reward-token">{tokenSymbol(bounty.token)}</span>
+        </div>
+      </header>
+
+      <div className="detail-grid">
+        <section>
+          <h2>Timeline</h2>
+          <ol className="timeline">
+            {timeline.map((e, i) => (
+              <TimelineItem key={i} event={e} />
+            ))}
+          </ol>
+        </section>
+
+        <aside className="facts">
+          <h2>Details</h2>
+          <dl>
             <div>
-              <dt>Reward</dt>
-              <dd className="mono">
-                {formatAmount(state.data.bounty.amount)} {tokenSymbol(state.data.bounty.token)}
-              </dd>
-            </div>
-            <div>
-              <dt>Creator</dt>
+              <dt>Status</dt>
               <dd>
-                <AddressLink address={state.data.bounty.creator} />
+                <StatusBadge status={bounty.status} />
               </dd>
             </div>
             <div>
-              <dt>Created</dt>
-              <dd>{formatDate(state.data.bounty.createdAt)}</dd>
+              <dt>Claims</dt>
+              <dd>
+                {bounty.claimCount} total · {bounty.pendingClaims} under review
+              </dd>
             </div>
             <div>
               <dt>Claims close</dt>
               <dd>
-                {formatDate(state.data.bounty.deadline)}{" "}
-                {state.data.bounty.status === "Open" && (
-                  <span className="muted">({relativeTime(state.data.bounty.deadline)})</span>
-                )}
+                {formatDate(bounty.deadline)}
+                {bounty.status === "Open" && <span className="muted"> · {relativeTime(bounty.deadline)}</span>}
               </dd>
             </div>
             <div>
-              <dt>Pending review</dt>
-              <dd>{state.data.bounty.pendingClaims}</dd>
+              <dt>Token</dt>
+              <dd>
+                {tokenSymbol(bounty.token)}
+                {bounty.token === NATIVE_XLM_SAC ? <span className="muted"> · native</span> : null}{" "}
+                <AddressLink address={bounty.token} />
+              </dd>
+            </div>
+            <div>
+              <dt>Finding reference</dt>
+              <dd className="ref">
+                <code>{bounty.issueRef}</code>
+                <CopyButton value={bounty.issueRef} />
+              </dd>
             </div>
           </dl>
+        </aside>
+      </div>
+    </>
+  );
+}
 
-          <h2>Claims ({state.data.claims.length})</h2>
-          {state.data.claims.length === 0 ? (
-            <Empty>No one has claimed this bounty yet.</Empty>
-          ) : (
-            <ol className="claims">
-              {state.data.claims.map((c) => (
-                <li key={c.id} className={`claim claim-${c.status.toLowerCase()}`}>
-                  <div className="claim-head">
-                    <span className="mono muted">Claim #{c.id}</span>
-                    <StatusBadge status={c.status} />
-                  </div>
-                  <p className="proof">{c.proofRef}</p>
-                  <p className="muted">
-                    <AddressLink address={c.claimant} /> · {formatDate(c.submittedAt)}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          )}
-        </>
-      )}
-    </section>
+function TimelineItem({ event }: { event: TimelineEvent }) {
+  const tone = event.claim ? event.claim.status.toLowerCase() : event.kind;
+  return (
+    <li className={`tl tl-${tone} ${event.upcoming ? "tl-upcoming" : ""}`}>
+      <span className="tl-dot" aria-hidden />
+      <div className="tl-body">
+        <div className="tl-head">
+          <strong>{event.title}</strong>
+          {event.claim && event.kind === "claim" && <StatusBadge status={event.claim.status} />}
+        </div>
+        {event.at !== undefined && (
+          <span className="muted tl-time">
+            {formatDate(event.at)} · {relativeTime(event.at)}
+          </span>
+        )}
+        {event.claim && event.kind === "claim" && (
+          <div className="claim-box">
+            <Identicon address={event.claim.claimant} />
+            <div>
+              <AddressLink address={event.claim.claimant} />
+              <p className="proof">{event.claim.proofRef}</p>
+            </div>
+          </div>
+        )}
+        {event.kind === "paid" && event.claim && (
+          <p className="muted">
+            Sent to <AddressLink address={event.claim.claimant} avatar />
+          </p>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div aria-hidden>
+      <div className="detail-hero">
+        <div className="detail-hero-main">
+          <Skeleton className="sk-sm" />
+          <Skeleton className="sk-h1" />
+          <Skeleton className="sk-title" />
+        </div>
+        <Skeleton className="sk-reward" />
+      </div>
+      <div className="detail-grid">
+        <div>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="sk-block" />
+          ))}
+        </div>
+        <Skeleton className="sk-block sk-tall" />
+      </div>
+    </div>
   );
 }

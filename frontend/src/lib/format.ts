@@ -47,3 +47,9 @@ export function relativeTime(unixSeconds: number, now = Date.now() / 1000): stri
   }
   return rtf.format(Math.round(diff), "second");
 }
+
+/** Splits `npm:expresss typosquat of express` into ecosystem and description. */
+export function splitIssueRef(ref: string): { ecosystem: string | null; text: string } {
+  const m = /^([a-z0-9.-]{2,12}):\s*(.+)$/i.exec(ref);
+  return m ? { ecosystem: m[1].toLowerCase(), text: m[2] } : { ecosystem: null, text: ref };
+}
