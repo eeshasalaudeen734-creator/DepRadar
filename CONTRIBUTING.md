@@ -27,7 +27,15 @@ cargo run --bin scan -- expresss
 
 # Testnet read client
 cd client && npm ci && npm run typecheck && npm start
+
+# Web dashboard (http://localhost:5173)
+cd frontend && npm ci && npm run dev
+npm run lint && npm run typecheck && npm test && npm run build
 ```
+
+Frontend conventions (contract access only through `lib/contract.ts`,
+loading/error/empty states everywhere, CSS tokens only) are in
+[frontend/README.md](frontend/README.md).
 
 Some tests in `src/cve/` call the live [OSV API](https://osv.dev); they skip
 (rather than fail) when the network is unavailable.

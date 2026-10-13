@@ -27,8 +27,8 @@ flowchart LR
 
     classDef live    fill:#134e4a,stroke:#2dd4bf,color:#e6fffa;
     classDef planned fill:#1e293b,stroke:#475569,color:#94a3b8,stroke-dasharray:4;
-    class Router,Scanner live;
-    class Crawler,Drips,Dashboard planned;
+    class Router,Scanner,Dashboard live;
+    class Crawler,Drips planned;
 ```
 
 **Solid teal** = live / substantially complete.  **Dashed** = planned — see
@@ -52,8 +52,10 @@ flowchart LR
   which crawler or scanner module produced the finding.
 - **Drips** handles the actual payout distribution once a bounty is
   released.
-- **Dashboard** is a read-only consumer of the contract's public state
-  (`get_bounty` / `get_claim`) — it doesn't hold any authority.
+- **Dashboard** (`frontend/`) is a read-only React app over the contract's
+  public state (`bounty_count` / `get_bounty` / `get_claim`). It lists every
+  bounty and its claims, holds no authority, and needs no wallet. Run it
+  with `cd frontend && npm ci && npm run dev`.
 
 ## Live on Testnet
 
@@ -126,6 +128,7 @@ verified, with the full trail auditable by anyone.
 | Bounty Router contract (`create_bounty` / `submit_claim` / `release`), unit-tested and deployed to Stellar testnet | _(predates issue tracker)_ |
 | Full `create_bounty` → `submit_claim` → `release` lifecycle run and verified against the live testnet contract | _(predates issue tracker)_ |
 | Repository health — MIT license, SECURITY.md, Code of Conduct, PR/issue templates, CODEOWNERS, Dependabot, CI split into fmt/clippy/test/wasm/client jobs, weekly `cargo audit` + `npm audit` | [`41903c3`](https://github.com/DepRadarOrg/DepRadar/commit/41903c3) |
+| Read-only web dashboard — bounty list and bounty detail with claims, live from testnet (`frontend/`) | _(see PROGRESS.md)_ |
 | Hardened Bounty Router v2 — multiple claims per bounty, `reject_claim`, deadlines + `cancel_bounty` refunds, contract-assigned IDs, events, storage TTL management, two-step admin rotation; redeployed and verified on testnet | [`79326f2`](https://github.com/DepRadarOrg/DepRadar/commit/79326f2) |
 | Popular-package reference dataset — npm and PyPI top-1000 curated lists (`data/popular-packages/`) and dataset loader (`src/typosquat/dataset.rs`) | [#1](https://github.com/DepRadarOrg/DepRadar/pull/1) |
 | Levenshtein edit-distance scorer and `nearest_match` for typosquat detection (`src/typosquat/distance.rs`) | [#2](https://github.com/DepRadarOrg/DepRadar/pull/2) |
@@ -139,7 +142,7 @@ verified, with the full trail auditable by anyone.
 - Crawler modules (per-registry: npm, PyPI, crates.io, …)
 - Full scanner pipeline wiring (crawler → scanner → `create_bounty`)
 - Behavioral analysis (install scripts, obfuscation, anomalous permission requests)
-- Dashboard (read-only contract state viewer)
+- Dashboard features: filters, search, live event feed, wallet-connected actions
 - Drips payout integration
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to pick up a module, and
