@@ -264,3 +264,32 @@ is closed — see [CONTRIBUTING.md](CONTRIBUTING.md).
 - **By:** ALLEN-AYODEJI
 - **Closes:** N/A (contract hardening)
 - **Status:** Merged.
+
+### Web dashboard — read-only bounty explorer
+
+- **What:** Adds `frontend/`, a React 19 + TypeScript + Vite app that reads
+  the v2 router on testnet with `@stellar/stellar-sdk` (simulated
+  `queryContract` calls, no wallet). It has two routes: `/` lists every
+  bounty, newest first, with reward, status, claim count, deadline and
+  creator, plus total/open/paid-out stats. `/bounty/:id` shows the bounty's
+  facts and every claim with its Pending/Rejected/Accepted status.
+  - All contract reads live in `lib/contract.ts`, with `parseBounty` /
+    `parseClaim` mapping contract structs to typed camelCase objects.
+  - Amount, address and date helpers are in `lib/format.ts`.
+  - `useAsync` handles loading/error/retry and ignores stale responses.
+  - Styling uses CSS design tokens, dark by default with light following the
+    OS. Hash routing means the build works on any static host.
+  - The network and contract can be overridden via `.env.local`.
+- **Tests:** 16 Vitest tests covering amount formatting (decimals,
+  grouping, negatives), address shortening, relative time, contract struct
+  parsing (both enum encodings, plus the rejection of unknown shapes), and
+  component rendering for the status badge and the error state with retry.
+- **CI:** a new `frontend` job runs `oxlint --deny-warnings`, typecheck,
+  tests and the build. Dependabot and the weekly npm audit cover
+  `frontend/`.
+- **Verified:** run locally against the live contract. The list shows both
+  testnet bounties, and bounty #1's detail page shows the rejected junk
+  claim and the accepted real claim.
+- **By:** ALLEN-AYODEJI
+- **Closes:** N/A (scaffold for the dashboard issue track)
+- **Status:** Merged.

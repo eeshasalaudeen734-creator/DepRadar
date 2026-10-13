@@ -9,6 +9,8 @@ on:
       - "Cargo.lock"
       - "client/package.json"
       - "client/package-lock.json"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
   workflow_dispatch:
 
 permissions:
@@ -33,6 +35,19 @@ jobs:
     defaults:
       run:
         working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm audit --omit=dev --audit-level=high
+
+  npm-audit-frontend:
+    name: npm audit (frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

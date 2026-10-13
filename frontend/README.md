@@ -1,0 +1,54 @@
+# DepRadar Dashboard
+
+Read-only web dashboard for the `deprader_router` contract. It lists every
+bounty and shows each bounty's claims, reading directly from Stellar
+testnet. No wallet is needed, and nothing is signed or submitted.
+
+Stack: React 19 + TypeScript + Vite, `@stellar/stellar-sdk` for contract
+reads, Vitest + Testing Library for tests, oxlint for linting.
+
+## Run it
+
+```bash
+cd frontend
+npm ci
+npm run dev        # http://localhost:5173
+```
+
+The dashboard defaults to the live v2 testnet contract. To point it at
+another deployment, copy `.env.example` to `.env.local` and edit it.
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server with hot reload |
+| `npm run typecheck` | `tsc -b` |
+| `npm run lint` | oxlint (CI fails on any warning) |
+| `npm test` | Vitest unit and component tests |
+| `npm run build` | Production build to `dist/` |
+
+## Layout
+
+```
+src/
+  config.ts           network + contract ID (env-overridable), explorer links
+  lib/types.ts        Bounty / Claim types mirroring the contract structs
+  lib/contract.ts     all contract reads; parseBounty / parseClaim
+  lib/format.ts       amounts (7 decimals), addresses, dates
+  lib/useAsync.ts     loading / error / success state for async reads
+  components/         Layout, StatusBadge, AddressLink, Loading/Error/Empty
+  pages/              BountyList (/), BountyDetail (/bounty/:id)
+```
+
+## Conventions
+
+- **All contract access goes through `lib/contract.ts`.** Pages never call
+  the SDK directly, and contract fields are converted to camelCase types
+  there.
+- **Every async view handles all three states** (loading, error with retry,
+  and empty) using the shared components in `components/ui.tsx`.
+- **Styles use the CSS tokens** in `index.css`, with no hard-coded colors.
+  Dark is the default, and light follows the OS preference.
+- **Tests sit next to the code** (`*.test.ts(x)`). New logic in `lib/`
+  needs unit tests, and new components need at least one render test.
