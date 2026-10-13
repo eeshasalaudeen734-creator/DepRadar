@@ -36,8 +36,9 @@ src/
   lib/types.ts        Bounty / Claim types mirroring the contract structs
   lib/contract.ts     all contract reads; parseBounty / parseClaim
   lib/format.ts       amounts (7 decimals), addresses, dates
+  lib/insights.ts     board stats, bounty timeline, user-facing state labels
   lib/useAsync.ts     loading / error / success state for async reads
-  components/         Layout, StatusBadge, AddressLink, Loading/Error/Empty
+  components/         Layout, Radar, BountyCard, ui (badges, identicons, skeletons, states)
   pages/              BountyList (/), BountyDetail (/bounty/:id)
 ```
 
@@ -49,6 +50,15 @@ src/
 - **Every async view handles all three states** (loading, error with retry,
   and empty) using the shared components in `components/ui.tsx`.
 - **Styles use the CSS tokens** in `index.css`, with no hard-coded colors.
-  Dark is the default, and light follows the OS preference.
+  The palette comes from `assets/banner.svg`: deep navy with radar teal,
+  plus green (paid/accepted), amber (under review) and red (rejected),
+  which are reserved for status. The UI is dark-only, by design.
+- **Type:** Space Grotesk for headings and numbers, Inter for body text,
+  and JetBrains Mono for addresses, IDs and code. All three are
+  self-hosted via `@fontsource`, so there are no external font requests.
+- **Motion is decoration only.** It must respect `prefers-reduced-motion`,
+  which is already handled globally in `index.css`.
+- **Show friendly state names** (`Paid`, `Refunded`, `Under review`) using
+  the label maps in `lib/insights.ts`, never the raw contract enum.
 - **Tests sit next to the code** (`*.test.ts(x)`). New logic in `lib/`
   needs unit tests, and new components need at least one render test.

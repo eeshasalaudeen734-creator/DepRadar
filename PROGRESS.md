@@ -293,3 +293,29 @@ is closed — see [CONTRIBUTING.md](CONTRIBUTING.md).
 - **By:** ALLEN-AYODEJI
 - **Closes:** N/A (scaffold for the dashboard issue track)
 - **Status:** Merged.
+
+### Web dashboard — visual redesign
+
+- **What:** Restyles `frontend/` around the DepRadar brand.
+  - **Home:** a hero with an animated radar in which every blip is a real
+    bounty (colored by status, and each one links to its bounty), plus live
+    counters for XLM paid out, XLM locked, bounties funded and claims
+    submitted.
+  - **Bounty board:** cards with an ecosystem tag, a large reward, a status
+    accent and the deadline, with All/Open/Paid/Refunded filter chips stored
+    in the URL.
+  - **Bounty page:** a hero header with the reward, a visual timeline
+    (funded → each claim with its verdict → claims close → paid or
+    refunded), and a details panel with a copyable finding reference.
+  - **Visual system:** dark navy/teal tokens taken from `assets/banner.svg`;
+    Space Grotesk, Inter and JetBrains Mono, self-hosted; skeleton loaders,
+    address identicons, a radar favicon, and pages that scroll to the top
+    on navigation. All animation is disabled under
+    `prefers-reduced-motion`.
+- **Tests:** 21 frontend tests, up from 16. The new `lib/insights.ts`
+  logic (board stats and timeline ordering) is unit-tested.
+- **Verified:** checked in the browser at 1280px and 375px against the live
+  testnet contract.
+- **By:** ALLEN-AYODEJI
+- **Closes:** N/A
+- **Status:** Merged.
