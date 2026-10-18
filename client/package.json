@@ -5,7 +5,7 @@
   "description": "Minimal read-only client for deprader_router on Stellar testnet",
   "main": "src/index.ts",
   "scripts": {
-    "start": "tsx src/index.ts",
+    "start": "node init && tsx src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "license": "MIT",
