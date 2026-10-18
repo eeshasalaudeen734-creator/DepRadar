@@ -9,3 +9,4 @@ dist/
 /fuzz/target/
 /fuzz/corpus/
 /fuzz/artifacts/
+config.bat
